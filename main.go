@@ -20,6 +20,7 @@ const (
 )
 
 type AppConfig struct {
+	BasePath       string
 	FileStorageDir string
 	Port           string
 }
@@ -43,19 +44,30 @@ func main() {
 	e.Use(middleware.Recover())
 	e.Use(middleware.BodyLimit("100M"))
 
-	e.Static("/", "public")
+	e.GET("/", func(c echo.Context) error {
+		return c.Redirect(http.StatusMovedPermanently, config.BasePath+"/")
+	})
 
-	api := e.Group("/api")
-	api.GET("/files", listFiles(config.FileStorageDir))
-	api.POST("/files", uploadFile(config.FileStorageDir))
+	app := e.Group(config.BasePath)
+	app.Static("/", "public")
+
+	api := app.Group("/api")
+	api.GET("/files", listFiles(config.FileStorageDir, config.BasePath))
+	api.POST("/files", uploadFile(config.FileStorageDir, config.BasePath))
 	api.GET("/files/:name/download", downloadFile(config.FileStorageDir))
 	api.DELETE("/files/:name", deleteFile(config.FileStorageDir))
 
+	e.Logger.Printf("base path: %s", config.BasePath)
 	e.Logger.Printf("file storage directory: %s", config.FileStorageDir)
 	e.Logger.Fatal(e.Start(":" + config.Port))
 }
 
 func loadConfig() AppConfig {
+	basePath := normalizeBasePath(os.Getenv("BASE_PATH"))
+	if basePath == "" {
+		basePath = "/autobackupfile"
+	}
+
 	fileStorageDir := os.Getenv("FILE_STORAGE_DIR")
 	if fileStorageDir == "" {
 		fileStorageDir = "files"
@@ -67,12 +79,21 @@ func loadConfig() AppConfig {
 	}
 
 	return AppConfig{
+		BasePath:       basePath,
 		FileStorageDir: fileStorageDir,
 		Port:           port,
 	}
 }
 
-func listFiles(fileStorageDir string) echo.HandlerFunc {
+func normalizeBasePath(basePath string) string {
+	basePath = strings.TrimSpace(basePath)
+	if basePath == "" || basePath == "/" {
+		return ""
+	}
+	return "/" + strings.Trim(basePath, "/")
+}
+
+func listFiles(fileStorageDir string, basePath string) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		entries, err := os.ReadDir(fileStorageDir)
 		if err != nil {
@@ -95,7 +116,7 @@ func listFiles(fileStorageDir string) echo.HandlerFunc {
 				Name:      name,
 				Size:      info.Size(),
 				UpdatedAt: info.ModTime().Format(time.RFC3339),
-				URL:       fmt.Sprintf("/api/files/%s/download", name),
+				URL:       fmt.Sprintf("%s/api/files/%s/download", basePath, name),
 			})
 		}
 
@@ -107,7 +128,7 @@ func listFiles(fileStorageDir string) echo.HandlerFunc {
 	}
 }
 
-func uploadFile(fileStorageDir string) echo.HandlerFunc {
+func uploadFile(fileStorageDir string, basePath string) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		file, err := c.FormFile("file")
 		if err != nil {
@@ -144,7 +165,7 @@ func uploadFile(fileStorageDir string) echo.HandlerFunc {
 
 		return c.JSON(http.StatusCreated, map[string]string{
 			"name": filename,
-			"url":  fmt.Sprintf("/api/files/%s/download", filename),
+			"url":  fmt.Sprintf("%s/api/files/%s/download", basePath, filename),
 		})
 	}
 }

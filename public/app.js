@@ -17,7 +17,7 @@ const setMessage = (text, isError = false) => {
 };
 
 async function loadFiles() {
-  const response = await fetch("/api/files");
+  const response = await fetch("api/files");
   if (!response.ok) {
     setMessage("โหลดรายการไฟล์ไม่สำเร็จ", true);
     return;
@@ -46,7 +46,7 @@ async function loadFiles() {
     row.querySelector(".file-name").textContent = file.name;
     row.querySelector("button").addEventListener("click", async () => {
       if (!confirm(`Delete ${file.name}?`)) return;
-      const response = await fetch(`/api/files/${encodeURIComponent(file.name)}`, { method: "DELETE" });
+      const response = await fetch(`api/files/${encodeURIComponent(file.name)}`, { method: "DELETE" });
       if (!response.ok) {
         setMessage("ลบไฟล์ไม่สำเร็จ", true);
         return;
@@ -64,7 +64,7 @@ uploadForm.addEventListener("submit", async (event) => {
   const data = new FormData(uploadForm);
 
   setMessage("กำลังอัปโหลด...");
-  const response = await fetch("/api/files", {
+  const response = await fetch("api/files", {
     method: "POST",
     body: data,
   });

@@ -12,7 +12,7 @@ go run .
 เปิดเว็บที่:
 
 ```text
-http://localhost:8080
+http://localhost:8080/autobackupfile/
 ```
 
 ถ้าพอร์ต `8080` ถูกใช้งานอยู่ สามารถเปลี่ยนพอร์ตได้:
@@ -28,12 +28,13 @@ PORT=8090 go run .
 | Name | Default | Description |
 | --- | --- | --- |
 | `PORT` | `8080` | port สำหรับ HTTP server |
+| `BASE_PATH` | `/autobackupfile` | path prefix สำหรับหน้าเว็บและ API |
 | `FILE_STORAGE_DIR` | `files` | folder สำหรับเก็บไฟล์ upload/download |
 
 ตัวอย่างรันโดยชี้ folder เก็บไฟล์เอง:
 
 ```bash
-FILE_STORAGE_DIR=/data/downloads PORT=8090 go run .
+BASE_PATH=/autobackupfile FILE_STORAGE_DIR=/data/downloads PORT=8090 go run .
 ```
 
 ตัวอย่าง mount volume เมื่อรันผ่าน Docker:
@@ -66,7 +67,7 @@ docker run --rm \
 เปิดเว็บที่:
 
 ```text
-http://localhost:8090
+http://localhost:8090/autobackupfile/
 ```
 
 ## GitHub Container Registry
@@ -90,16 +91,16 @@ Pull request จะ build เพื่อตรวจสอบอย่างเ
 ## API
 
 ```http
-GET /api/files
-POST /api/files
-GET /api/files/:name/download
-DELETE /api/files/:name
+GET /autobackupfile/api/files
+POST /autobackupfile/api/files
+GET /autobackupfile/api/files/:name/download
+DELETE /autobackupfile/api/files/:name
 ```
 
 ตัวอย่างอัปโหลดผ่าน `curl`:
 
 ```bash
-curl -F "file=@example.pdf" http://localhost:8080/api/files
+curl -F "file=@example.pdf" http://localhost:8080/autobackupfile/api/files
 ```
 
 ไฟล์ที่อัปโหลดจะถูกเก็บในโฟลเดอร์ `files/`
